@@ -2,6 +2,7 @@ interface User {
   x: number;
   y: number;
   angle: number;
+  yAngle: number;
   fov: number;
   moveSpeed: number;
   rotSpeed: number;
@@ -20,7 +21,8 @@ const user: User = {
   x: 3,
   y: 3,
   angle: 180,
-  fov: 80,
+  yAngle: 0,
+  fov: 100,
   moveSpeed: 0.05, // Movement speed
   rotSpeed: 3, // Rotation speed
 };
@@ -51,6 +53,7 @@ function keepWithin(x: number, y: number) {
 }
 
 const tileSize = 8;
+const yAngleMult = 15;
 function draw2d() {
   drawMap();
 }
@@ -97,18 +100,45 @@ function gameLoop() {
 
 function drawSkybox() {
   ctx.fillStyle = `hsl(208, 39.90%, 70.00%)`;
-  ctx.fillRect(0, 0, canvas.width, canvas.height / 2);
+  ctx.fillRect(
+    0,
+    0,
+    canvas.width,
+    canvas.height / 2 + user.yAngle * yAngleMult
+  );
   ctx.fillStyle = `hsl(19, 39.90%, 70.00%)`;
-  ctx.fillRect(0, canvas.height / 2, canvas.width, canvas.height / 2);
+  ctx.fillRect(
+    0,
+    canvas.height / 2 + user.yAngle * yAngleMult,
+    canvas.width,
+    canvas.height - (canvas.height / 2 + user.yAngle * yAngleMult)
+  );
 }
 
 function handleInput() {
+  /*
   if (keys["ArrowUp"]) {
     moveUser(user.moveSpeed);
   }
 
   if (keys["ArrowDown"]) {
     moveUser(-user.moveSpeed);
+  }
+  */
+  if (keys["w"]) {
+    moveUser(user.moveSpeed);
+  }
+
+  if (keys["r"]) {
+    moveUser(-user.moveSpeed);
+  }
+
+  if (keys["ArrowUp"]) {
+    user.yAngle = Math.min(180, user.yAngle + user.rotSpeed);
+  }
+
+  if (keys["ArrowDown"]) {
+    user.yAngle = Math.max(-180, user.yAngle - user.rotSpeed);
   }
 
   if (keys["ArrowLeft"]) {
@@ -190,8 +220,17 @@ function drawRay(i: number, dist: number, wallType: number = 1) {
   // const hue = Math.random() * 360;
   const hue = wallType * 20;
   ctx.fillStyle = `hsl(${hue}, 50%, ${dist * 5 + 20}%)`;
-  const height = ((1 / dist) * canvas.height) / 1;
+  let height = ((1 / dist) * canvas.height) / 1;
+
+  const yHeight = canvas.height / 2 - height / 2;
+
+  ctx.fillRect(startX, yHeight + user.yAngle * yAngleMult, bar, height);
+
+  /*
+  ctx.fillStyle = `hsl(${hue}, 50%, ${dist * 5 + 25}%)`;
+  height = ((1 / dist) * canvas.height) / 1.25;
   ctx.fillRect(startX, canvas.height / 2 - height / 2, bar, height);
+  */
 }
 
 function findWallType(x: number, y: number) {
