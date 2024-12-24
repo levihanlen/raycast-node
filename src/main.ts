@@ -126,11 +126,19 @@ function handleInput() {
   }
   */
   if (keys["w"]) {
-    moveUser(user.moveSpeed);
+    moveUser(user.moveSpeed, "fwd");
   }
 
   if (keys["r"]) {
-    moveUser(-user.moveSpeed);
+    moveUser(-user.moveSpeed, "fwd");
+  }
+
+  if (keys["s"]) {
+    moveUser(user.moveSpeed, "side");
+  }
+
+  if (keys["a"]) {
+    moveUser(-user.moveSpeed, "side");
   }
 
   if (keys["ArrowUp"]) {
@@ -151,8 +159,10 @@ function handleInput() {
   }
 }
 
-function moveUser(amount: number) {
-  const radians = (user.angle / 180) * Math.PI;
+function moveUser(amount: number, dir: "fwd" | "side") {
+  const thisAngle = dir === "fwd" ? user.angle : user.angle + 90;
+
+  const radians = (thisAngle / 180) * Math.PI;
   const thisX = Math.cos(radians) * amount;
   const thisY = Math.sin(radians) * amount;
 
