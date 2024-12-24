@@ -7,25 +7,27 @@ interface User {
   rotSpeed: number;
 }
 
-const canvas = document.querySelector("#canvas");
+const canvas: HTMLCanvasElement = document.querySelector("#canvas")!;
 
 // @ts-ignore dont matter
-const ctx = canvas.getContext("2d");
+const ctx = canvas.getContext("2d")!;
 
-ctx.imageSmoothingEnabled = false;
+// ctx.imageSmoothingEnabled = false;
 
 // ctx.fillRect(2, 4, 20, 30);
 
 const user: User = {
   x: 4,
   y: 4,
-  angle: 180,
-  fov: 60,
-  moveSpeed: 0.2, // Movement speed
+  angle: 90,
+  fov: 10,
+  moveSpeed: 0.05, // Movement speed
   rotSpeed: 3, // Rotation speed
 };
 
-const totalRays = user.fov * 2;
+const totalRays = 200;
+
+const using2d = false;
 
 const map = [
   [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
@@ -37,8 +39,21 @@ const map = [
   [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
 ];
 
-const tileSize = 8;
+const mapY = map.length;
+const mapX = map[0].length;
 
+function keepWithin(x: number, y: number) {
+  const clampedX = Math.max(0, Math.min(x, mapX - 1));
+
+  const clampedY = Math.max(0, Math.min(y, mapY - 1));
+
+  return { x: clampedX, y: clampedY };
+}
+
+const tileSize = 8;
+function draw2d() {
+  drawMap();
+}
 function drawMap() {
   for (let row = 0; row < map.length; row++) {
     for (let col = 0; col < map[row].length; col++) {
@@ -64,21 +79,18 @@ window.addEventListener("keyup", (e) => {
 gameLoop();
 
 function gameLoop() {
-  ctx.clearRect(0, 0, 100, 100);
+  if (!ctx) {
+    return;
+  }
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // Draw the map
-  drawMap();
-
-  // Handle user input and update position
   handleInput();
 
-  // Cast rays based on updated user position and angle
   castRays();
+  if (using2d) {
+    draw2d();
+  }
 
-  // Draw the user as a circle for visualization
-  // drawUser();
-
-  // Request the next frame
   requestAnimationFrame(gameLoop);
 }
 
@@ -103,38 +115,60 @@ function handleInput() {
 
 function moveUser(amount: number) {
   const radians = (user.angle / 180) * Math.PI;
-  const x = Math.cos(radians) * amount;
-  const y = Math.sin(radians) * amount;
-  user.x += x;
-  user.y += y;
+  const thisX = Math.cos(radians) * amount;
+  const thisY = Math.sin(radians) * amount;
+
+  const userX = user.x + thisX;
+  const userY = user.y + thisY;
+
+  const { x, y } = keepWithin(userX, userY);
+  user.x = x;
+  user.y = y;
 }
 
 function castRays() {
-  console.log("in there");
   const maxDist = 1000;
-  const moveDist = 1;
+  const moveDist = 0.001;
   for (let i = 0; i < totalRays; i++) {
-    console.log("hi");
     const rayAngle = (i - user.fov + user.angle) % 360;
     const radians = (rayAngle / 180) * Math.PI;
 
     const xMove = Math.cos(radians) * moveDist;
     const yMove = Math.sin(radians) * moveDist;
+
     let x = user.x + xMove;
     let y = user.y + yMove;
-    let colliding = findColliding(x, y);
-    let dist = 1;
+    let colliding = false;
+    let dist = moveDist;
     while (dist < maxDist && !colliding) {
-      x += xMove;
-      y += yMove;
-      dist += 1;
       colliding = findColliding(x, y);
+
+      if (colliding) {
+        //  x -=
+      } else {
+        x += xMove;
+        y += yMove;
+        dist += moveDist;
+      }
     }
-    drawRay(x, y);
+    drawRay(i, dist);
+    drawRay2d(x, y);
   }
 }
 
-function drawRay(x: number, y: number) {
+function drawRay(i: number, dist: number) {
+  const bar = canvas.width / user.fov;
+  const startX = (i / totalRays) * canvas.width;
+
+  ctx.fillStyle = `hsl(10, 0%, ${dist * 5}%)`;
+  const height = ((1 / dist) * canvas.height) / 2;
+  ctx.fillRect(startX, canvas.height / 2 - height / 2, bar, height);
+}
+
+function drawRay2d(x: number, y: number) {
+  if (!using2d) {
+    return;
+  }
   ctx.beginPath();
   ctx.moveTo(user.x * 8, user.y * 8);
   ctx.lineTo(x * 8, y * 8);
@@ -145,9 +179,14 @@ function drawRay(x: number, y: number) {
 }
 
 function findColliding(x: number, y: number) {
-  const thisX = Math.round(x);
-  const thisY = Math.round(y);
-  const thing = map[thisY][thisX];
+  const { x: floorX, y: floorY } = keepWithin(Math.floor(x), Math.floor(y));
+  const thing = map[floorY][floorX];
+
+  //  const { x: ceilX, y: ceilY } = keepWithin(Math.ceil(x), Math.ceil(y));
+  // console.log("ciel", ceilX, ceilY);
+  // const thing2 = map[ceilY][ceilX];
+  // debugger;
+  // console.log(thing, thing2);
   if (thing === 1) {
     return true;
   } else {
