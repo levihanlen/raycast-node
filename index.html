@@ -5,13 +5,15 @@
     <title>Raycaster</title>
     <script src="https://cdn.tailwindcss.com"></script>
   </head>
-  <body>
-    <h1>Levi Hanlen's Raycaster</h1>
+  <body class="relative">
+    <div class="absolute top-2 left-2 backdrop-blur p-4 rounded bg-white/50">
+      <h1>Levi Hanlen's Raycaster</h1>
+    </div>
     <canvas
       id="canvas"
-      width="1000"
+      width="2000"
       height="1000"
-      class="aspect-square border border-black h-full w-1/2"
+      class="aspect-square border border-black w-screen h-screen"
     ></canvas>
     <script src="/src/main.ts"></script>
   </body>

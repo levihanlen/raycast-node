@@ -17,10 +17,10 @@ const ctx = canvas.getContext("2d")!;
 // ctx.fillRect(2, 4, 20, 30);
 
 const user: User = {
-  x: 4,
-  y: 4,
+  x: 3,
+  y: 3,
   angle: 180,
-  fov: 40,
+  fov: 80,
   moveSpeed: 0.05, // Movement speed
   rotSpeed: 3, // Rotation speed
 };
@@ -31,10 +31,10 @@ const using2d = false;
 
 const map = [
   [1, 1, 1, 2, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-  [1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-  [1, 0, 1, 0, 2, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 1],
-  [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1],
-  [1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 1],
+  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+  [1, 0, 0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 1],
+  [1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1],
+  [1, 0, 0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 1],
   [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
   [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
 ];
@@ -128,6 +128,12 @@ function moveUser(amount: number) {
 
   const userX = user.x + thisX;
   const userY = user.y + thisY;
+
+  const colliding = findColliding(userX, userY);
+
+  if (colliding) {
+    return;
+  }
 
   const { x, y } = keepWithin(userX, userY);
   user.x = x;
