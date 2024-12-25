@@ -14,7 +14,7 @@ const canvas: HTMLCanvasElement = document.querySelector("#canvas")!;
 // @ts-ignore
 const ctx = canvas.getContext("2d")!;
 
-const textureUrls: string[] = ["/img.jpg"];
+const textureUrls: string[] = ["/wall.jpeg"];
 const wallTextures: HTMLImageElement[] = [];
 
 function preloadTextures(urls: string[]): Promise<HTMLImageElement[]> {
@@ -372,8 +372,8 @@ function drawRay(
 
   ctx.drawImage(texture, textureX, textureY, 1, 1, x, y, 1, 1);
 
-  const darknessScaling = 0.2;
-  const darknessFactor = Math.min(dist * darknessScaling, 1);
+  const darknessScaling = 0.1;
+  const darknessFactor = Math.min(Math.sqrt(dist * darknessScaling), 1);
 
   ctx.fillStyle = `rgba(0, 0, 0, ${darknessFactor})`;
   ctx.fillRect(x, y, 1, 1);
