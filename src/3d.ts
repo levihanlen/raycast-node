@@ -265,7 +265,6 @@ function castRays() {
   const moveDist = 0.01;
   let textureX = 0;
   let textureY = 0;
-  // let lastVertical = false;
   for (let i = 0; i < canvas.height; i++) {
     const vertRayAngle =
       (i * (user.fov / canvas.height) - user.fov / 2 + user.vertAngle) % 360;
@@ -279,10 +278,6 @@ function castRays() {
         (j * (user.fov / canvas.width) - user.fov / 2 + user.horzAngle) % 360;
 
       const horzRadians = (horzRayAngle / 180) * Math.PI;
-
-      // x is sid to side
-      // y is forward
-      // z is up and down
 
       const xMove = Math.cos(horzRadians) * Math.cos(vertRadians) * moveDist;
       const yMove = Math.sin(horzRadians) * Math.cos(vertRadians) * moveDist;
@@ -305,23 +300,14 @@ function castRays() {
       if (direction === "z") {
         textureX = wallTextures[0].width * (x % 1);
         textureY = wallTextures[0].height * (y % 1);
-        // textureY = 1;
       } else if (direction === "y") {
         textureX = wallTextures[0].width * (x % 1);
         textureY = wallTextures[0].height * (z % 1);
-        // textureY = 2;
       } else {
         textureX = wallTextures[0].width * (y % 1);
         textureY = wallTextures[0].height * (z % 1);
-        // textureY = 3;
       }
 
-      /*
-      if (isVertical !== lastVertical) {
-        textureX = 0;
-      }
-      lastVertical = isVertical;
-*/
       textureX = Math.floor(textureX);
       textureY = Math.floor(textureY);
 
@@ -367,23 +353,6 @@ function getClosestCubeFace(x: number, y: number, z: number): "x" | "y" | "z" {
     minDistance = zMinDist;
   }
 
-  /*
-  // Determine whether it's the "min" or "max" side along the chosen axis
-  let side: "min" | "max";
-
-  switch (axis) {
-    case "x":
-      side = xDistMin < xDistMax ? "min" : "max";
-      break;
-    case "y":
-      side = yDistMin < yDistMax ? "min" : "max";
-      break;
-    case "z":
-      side = zDistMin < zDistMax ? "min" : "max";
-      break;
-  }
-  */
-
   return axis;
 }
 
@@ -395,15 +364,6 @@ function drawRay(
   textureX: number,
   textureY: number
 ) {
-  /*
-  const barWidth = canvas.width / totalRays;
-  const startX = (i / totalRays) * canvas.width;
-*/
-
-  // const hue = Math.random() * 360;
-  // const hue = wallType * 20;
-
-  const hue = textureY * 20;
   // ctx.fillStyle = `hsl(${hue}, 50%, ${Math.min(dist * 5 + 20, 100)}%)`;
 
   const texture = wallTextures[0];
@@ -411,6 +371,12 @@ function drawRay(
   // ctx.fillRect(x, y, 1, 1);
 
   ctx.drawImage(texture, textureX, textureY, 1, 1, x, y, 1, 1);
+
+  const darknessScaling = 0.2;
+  const darknessFactor = Math.min(dist * darknessScaling, 1);
+
+  ctx.fillStyle = `rgba(0, 0, 0, ${darknessFactor})`;
+  ctx.fillRect(x, y, 1, 1);
 }
 
 function findWallType(x: number, y: number, z: number) {
