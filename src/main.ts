@@ -10,12 +10,43 @@ interface User {
 
 const canvas: HTMLCanvasElement = document.querySelector("#canvas")!;
 
-// @ts-ignore dont matter
+// @ts-ignore
 const ctx = canvas.getContext("2d")!;
 
-// ctx.imageSmoothingEnabled = false;
+const textureUrls: string[] = ["/public/wall.jpeg"];
+const wallTextures: HTMLImageElement[] = [];
 
-// ctx.fillRect(2, 4, 20, 30);
+function preloadTextures(urls: string[]): Promise<HTMLImageElement[]> {
+  const promises = urls.map((url) => {
+    return new Promise<HTMLImageElement>((resolve, reject) => {
+      const img = new Image();
+      img.src = url;
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error(`Failed to load image: ${url}`));
+    });
+  });
+  return Promise.all(promises);
+}
+
+preloadTextures(textureUrls)
+  .then((images) => {
+    wallTextures.push(...images);
+    console.log("All textures loaded successfully.");
+    // You can now start the game or rendering loop
+    startGameLoop();
+  })
+  .catch((error) => {
+    console.error(error);
+  });
+
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  // Recalculate any dependent variables here
+}
+
+window.addEventListener("resize", resizeCanvas);
+resizeCanvas(); // Initial call
 
 const user: User = {
   x: 3,
@@ -27,9 +58,13 @@ const user: User = {
   rotSpeed: 3, // Rotation speed
 };
 
-const totalRays = 500;
+const totalRays = canvas.width;
 
 const using2d = false;
+
+let lastTime = performance.now();
+let frameCount = 0;
+let fps = 0;
 
 const map = [
   [1, 1, 1, 2, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
@@ -78,8 +113,9 @@ window.addEventListener("keydown", (e) => {
 window.addEventListener("keyup", (e) => {
   keys[e.key] = false;
 });
-
-gameLoop();
+function startGameLoop() {
+  requestAnimationFrame(gameLoop);
+}
 
 function gameLoop() {
   if (!ctx) {
@@ -93,6 +129,21 @@ function gameLoop() {
   castRays();
   if (using2d) {
     draw2d();
+  }
+
+  frameCount++;
+  const currentTime = performance.now();
+  const delta = currentTime - lastTime;
+
+  if (delta >= 1000) {
+    fps = frameCount;
+    frameCount = 0;
+    lastTime = currentTime;
+  }
+  const thing = document.querySelector("#fps");
+
+  if (thing) {
+    thing.textContent = fps.toString();
   }
 
   requestAnimationFrame(gameLoop);
@@ -183,21 +234,13 @@ function moveUser(amount: number, dir: "fwd" | "side") {
 function castRays() {
   const maxDist = 1000;
   const moveDist = 0.01;
+  let textureX = 0;
+  let lastVertical = false;
+  // let lastCoord: { x: number; y: number } = { x: 0, y: 0 };
   for (let i = 0; i < totalRays; i++) {
-    //  i = 0, then -fov
-    // i = totalrays, then fov
-
     const rayAngle =
       (i * (user.fov / totalRays) - user.fov / 2 + user.angle) % 360;
     const radians = (rayAngle / 180) * Math.PI;
-    /*
-    if (i === 0) {
-      console.log(rayAngle);
-    }
-    if (i === totalRays - 1) {
-      console.log(rayAngle);
-    }
-    */
 
     const xMove = Math.cos(radians) * moveDist;
     const yMove = Math.sin(radians) * moveDist;
@@ -206,25 +249,62 @@ function castRays() {
     let y = user.y + yMove;
     let colliding = false;
     let dist = moveDist;
-    while (dist < maxDist && !colliding) {
-      colliding = findColliding(x, y);
 
-      if (colliding) {
-        //  x -=
-      } else {
-        x += xMove;
-        y += yMove;
-        dist += moveDist;
-      }
+    while (dist < maxDist && !colliding) {
+      x += xMove;
+      y += yMove;
+      dist += moveDist;
+      colliding = findColliding(x, y);
     }
+
+    // dist = dist * Math.cos(((rayAngle - user.angle) / 180) * Math.PI);
+
+    // const { x: thisCoordX, y: thisCoordY } = getRounded(x, y);
+
+    /*
+    if (lastCoord.x === thisCoordX && lastCoord.y === thisCoordY) {
+      textureX += dist;
+      if (textureX >= wallTextures[0].width) {
+        textureX = 0;
+      }
+    } else {
+      textureX = 0;
+    }
+    lastCoord.x = thisCoordX;
+    lastCoord.y = thisCoordY;
+    */
+
+    // textureX = wallTextures[0].width *
+
+    const isVertical =
+      Math.abs(x - Math.floor(x) - 0.5) < Math.abs(y - Math.floor(y) - 0.5);
+
+    if (isVertical) {
+      textureX = wallTextures[0].width * (x % 1);
+    } else {
+      textureX = wallTextures[0].width * (y % 1);
+    }
+
+    if (isVertical !== lastVertical) {
+      textureX = 0;
+    }
+    lastVertical = isVertical;
+
+    textureX = Math.floor(textureX);
+
     const wallType = findWallType(x, y);
-    drawRay(i, dist, wallType);
+    drawRay(i, dist, wallType, textureX);
     drawRay2d(x, y);
   }
 }
 
-function drawRay(i: number, dist: number, wallType: number = 1) {
-  const bar = canvas.width / totalRays;
+function drawRay(
+  i: number,
+  dist: number,
+  wallType: number = 1,
+  textureX: number
+) {
+  const barWidth = canvas.width / totalRays;
   const startX = (i / totalRays) * canvas.width;
 
   // const hue = Math.random() * 360;
@@ -234,13 +314,21 @@ function drawRay(i: number, dist: number, wallType: number = 1) {
 
   const yHeight = canvas.height / 2 - height / 2;
 
-  ctx.fillRect(startX, yHeight + user.yAngle * yAngleMult, bar, height);
+  const texture = wallTextures[0];
 
-  /*
-  ctx.fillStyle = `hsl(${hue}, 50%, ${dist * 5 + 25}%)`;
-  height = ((1 / dist) * canvas.height) / 1.25;
-  ctx.fillRect(startX, canvas.height / 2 - height / 2, bar, height);
-  */
+  // ctx.fillRect(startX, yHeight + user.yAngle * yAngleMult, barWidth, height);
+
+  ctx.drawImage(
+    texture,
+    textureX,
+    0,
+    1,
+    texture.height,
+    startX,
+    yHeight + user.yAngle * yAngleMult,
+    barWidth,
+    height
+  );
 }
 
 function findWallType(x: number, y: number) {
@@ -260,6 +348,10 @@ function drawRay2d(x: number, y: number) {
   ctx.stroke();
 }
 
+function getRounded(x: number, y: number) {
+  return { x: Math.floor(x), y: Math.floor(y) };
+}
+
 function roundToGrid(x: number, y: number) {
   const { x: floorX, y: floorY } = keepWithin(Math.floor(x), Math.floor(y));
   return map[floorY][floorX];
@@ -267,11 +359,6 @@ function roundToGrid(x: number, y: number) {
 function findColliding(x: number, y: number) {
   const thing = roundToGrid(x, y);
 
-  //  const { x: ceilX, y: ceilY } = keepWithin(Math.ceil(x), Math.ceil(y));
-  // console.log("ciel", ceilX, ceilY);
-  // const thing2 = map[ceilY][ceilX];
-  // debugger;
-  // console.log(thing, thing2);
   if (thing !== 0) {
     return true;
   } else {
