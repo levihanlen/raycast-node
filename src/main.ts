@@ -348,10 +348,6 @@ function drawRay2d(x: number, y: number) {
   ctx.stroke();
 }
 
-function getRounded(x: number, y: number) {
-  return { x: Math.floor(x), y: Math.floor(y) };
-}
-
 function roundToGrid(x: number, y: number) {
   const { x: floorX, y: floorY } = keepWithin(Math.floor(x), Math.floor(y));
   return map[floorY][floorX];
