@@ -40,15 +40,6 @@ preloadTextures(textureUrls)
     console.error(error);
   });
 
-function resizeCanvas() {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-  // Recalculate any dependent variables here
-}
-
-// window.addEventListener("resize", resizeCanvas);
-// resizeCanvas();
-
 const user: User = {
   x: 3,
   y: 3,
@@ -207,11 +198,11 @@ function handleInput() {
   }
 
   if (keys["f"]) {
-    moveUser(user.moveSpeed, "z");
+    moveUser(-user.moveSpeed, "z");
   }
 
   if (keys["q"]) {
-    moveUser(-user.moveSpeed, "z");
+    moveUser(user.moveSpeed, "z");
   }
 
   if (keys["ArrowUp"]) {
@@ -271,8 +262,9 @@ function moveUser(amount: number, dir: "y" | "x" | "z") {
 
 function castRays() {
   const maxDist = 1000;
-  const moveDist = 0.1;
+  const moveDist = 0.01;
   let textureX = 0;
+  let textureY = 0;
   // let lastVertical = false;
   for (let i = 0; i < canvas.height; i++) {
     const vertRayAngle =
@@ -309,31 +301,90 @@ function castRays() {
         colliding = findColliding(x, y, z);
       }
 
-      /*
-      const isVertical =
-        Math.abs(x - Math.floor(x) - 0.5) < Math.abs(y - Math.floor(y) - 0.5);
-
-      if (isVertical) {
+      const direction = getClosestCubeFace(x, y, z);
+      if (direction === "z") {
         textureX = wallTextures[0].width * (x % 1);
+        textureY = wallTextures[0].height * (y % 1);
+        // textureY = 1;
+      } else if (direction === "y") {
+        textureX = wallTextures[0].width * (x % 1);
+        textureY = wallTextures[0].height * (z % 1);
+        // textureY = 2;
       } else {
         textureX = wallTextures[0].width * (y % 1);
+        textureY = wallTextures[0].height * (z % 1);
+        // textureY = 3;
       }
 
+      /*
       if (isVertical !== lastVertical) {
         textureX = 0;
       }
       lastVertical = isVertical;
-
+*/
       textureX = Math.floor(textureX);
-      */
+      textureY = Math.floor(textureY);
 
       const wallType = findWallType(x, y, z);
 
       if (wallType !== 0) {
-        drawRay(i, j, dist, wallType, textureX);
+        drawRay(i, j, dist, wallType, textureX, textureY);
       }
     }
   }
+}
+
+function getClosestCubeFace(x: number, y: number, z: number): "x" | "y" | "z" {
+  // Calculate the fractional part for each coordinate
+  const xFrac = x % 1;
+  const yFrac = y % 1;
+  const zFrac = z % 1;
+
+  // Calculate the distance to the nearest face along each axis
+  const xDistMin = xFrac; // Distance to the "left" face (x = 0)
+  const xDistMax = 1 - xFrac; // Distance to the "right" face (x = 1)
+  const yDistMin = yFrac; // Distance to the "front" face (y = 0)
+  const yDistMax = 1 - yFrac; // Distance to the "back" face (y = 1)
+  const zDistMin = zFrac; // Distance to the "bottom" face (z = 0)
+  const zDistMax = 1 - zFrac; // Distance to the "top" face (z = 1)
+
+  // Determine the minimal distance for each axis
+  const xMinDist = Math.min(xDistMin, xDistMax);
+  const yMinDist = Math.min(yDistMin, yDistMax);
+  const zMinDist = Math.min(zDistMin, zDistMax);
+
+  // Find the axis with the smallest minimal distance
+  let axis: "x" | "y" | "z" = "x";
+  let minDistance = xMinDist;
+
+  if (yMinDist < minDistance) {
+    axis = "y";
+    minDistance = yMinDist;
+  }
+
+  if (zMinDist < minDistance) {
+    axis = "z";
+    minDistance = zMinDist;
+  }
+
+  /*
+  // Determine whether it's the "min" or "max" side along the chosen axis
+  let side: "min" | "max";
+
+  switch (axis) {
+    case "x":
+      side = xDistMin < xDistMax ? "min" : "max";
+      break;
+    case "y":
+      side = yDistMin < yDistMax ? "min" : "max";
+      break;
+    case "z":
+      side = zDistMin < zDistMax ? "min" : "max";
+      break;
+  }
+  */
+
+  return axis;
 }
 
 function drawRay(
@@ -341,7 +392,8 @@ function drawRay(
   x: number,
   dist: number,
   wallType: number = 1,
-  textureX: number
+  textureX: number,
+  textureY: number
 ) {
   /*
   const barWidth = canvas.width / totalRays;
@@ -349,32 +401,16 @@ function drawRay(
 */
 
   // const hue = Math.random() * 360;
-  const hue = wallType * 20;
-  ctx.fillStyle = `hsl(${hue}, 50%, ${Math.min(dist * 5 + 20, 100)}%)`;
+  // const hue = wallType * 20;
 
-  // ctx.fillStyle = "red";
-  /*
-  let height = ((1 / dist) * canvas.height) / 1;
+  const hue = textureY * 20;
+  // ctx.fillStyle = `hsl(${hue}, 50%, ${Math.min(dist * 5 + 20, 100)}%)`;
 
-  const yHeight = canvas.height / 2 - height / 2;
-*/
-  // const texture = wallTextures[0];
+  const texture = wallTextures[0];
 
-  ctx.fillRect(x, y, 1, 1);
+  // ctx.fillRect(x, y, 1, 1);
 
-  /*
-  ctx.drawImage(
-    texture,
-    textureX,
-    0,
-    1,
-    texture.height,
-    startX,
-    yHeight,
-    barWidth,
-    height
-  );
-  */
+  ctx.drawImage(texture, textureX, textureY, 1, 1, x, y, 1, 1);
 }
 
 function findWallType(x: number, y: number, z: number) {
