@@ -14,7 +14,7 @@ const canvas: HTMLCanvasElement = document.querySelector("#canvas")!;
 // @ts-ignore
 const ctx = canvas.getContext("2d")!;
 
-const textureUrls: string[] = ["/wall.jpeg"];
+const textureUrls: string[] = ["/img.jpg"];
 const wallTextures: HTMLImageElement[] = [];
 
 function preloadTextures(urls: string[]): Promise<HTMLImageElement[]> {
@@ -50,18 +50,25 @@ const user: User = {
   moveSpeed: 0.05,
   rotSpeed: 3,
 };
+const horzFov = user.fov; // or any suitable value
+// const vertFov = (horzFov * canvas.height) / canvas.width;
+
+const aspectRatio = canvas.height / canvas.width;
+const vertFov =
+  2 *
+  Math.atan(Math.tan((horzFov / 2) * (Math.PI / 180)) * aspectRatio) *
+  (180 / Math.PI);
 
 // const totalRays = canvas.width;
 
 let lastTime = performance.now();
 let frameCount = 0;
 let fps = 0;
-
 const map = [
   [
     [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
-    [2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
-    [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
+    [2, 2, 9, 1, 2, 2, 2, 9, 2, 2, 2, 2, 9, 2, 2, 2],
+    [2, 2, 2, 2, 9, 2, 2, 2, 2, 9, 2, 2, 2, 2, 2, 2],
     [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
     [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
     [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
@@ -69,7 +76,7 @@ const map = [
   ],
   [
     [1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
     [1, 0, 0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 1],
     [1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1],
     [1, 0, 0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 1],
@@ -78,26 +85,25 @@ const map = [
   ],
   [
     [1, 1, 1, 0, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 1],
     [1, 0, 0, 2, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 1],
-    [1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1],
+    [1, 0, 0, 0, 4, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1],
     [1, 0, 0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
     [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
   ],
   [
     [1, 1, 1, 2, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 1],
     [1, 0, 0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 1],
     [1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1],
     [1, 0, 0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 1],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
     [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
   ],
-
   [
-    [1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-    [1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 1, 1, 2, 1, 1, 9, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 1, 1, 2, 1, 8, 1, 1, 1, 1, 1, 8, 1, 1, 1, 1],
     [1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
     [1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
     [1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
@@ -261,13 +267,13 @@ function moveUser(amount: number, dir: "y" | "x" | "z") {
 }
 
 function castRays() {
-  const maxDist = 1000;
+  const maxDist = 100;
   const moveDist = 0.01;
   let textureX = 0;
   let textureY = 0;
   for (let i = 0; i < canvas.height; i++) {
     const vertRayAngle =
-      (i * (user.fov / canvas.height) - user.fov / 2 + user.vertAngle) % 360;
+      i * (vertFov / canvas.height) - vertFov / 2 + user.vertAngle;
 
     const vertRadians = (vertRayAngle / 180) * Math.PI;
 
@@ -275,7 +281,7 @@ function castRays() {
 
     for (let j = 0; j < canvas.width; j++) {
       const horzRayAngle =
-        (j * (user.fov / canvas.width) - user.fov / 2 + user.horzAngle) % 360;
+        j * (horzFov / canvas.width) - horzFov / 2 + user.horzAngle;
 
       const horzRadians = (horzRayAngle / 180) * Math.PI;
 
@@ -364,17 +370,27 @@ function drawRay(
   textureX: number,
   textureY: number
 ) {
-  // ctx.fillStyle = `hsl(${hue}, 50%, ${Math.min(dist * 5 + 20, 100)}%)`;
+  /*
+  ctx.fillStyle = `hsl(${hue}, 50%, ${Math.min(dist * 5 + 20, 100)}%)`;
 
   const texture = wallTextures[0];
 
-  // ctx.fillRect(x, y, 1, 1);
+  ctx.fillRect(x, y, 1, 1);
+*/
 
-  ctx.drawImage(texture, textureX, textureY, 1, 1, x, y, 1, 1);
+  // ctx.drawImage(texture, textureX, textureY, 1, 1, x, y, 1, 1);
 
-  const darknessScaling = 0.1;
-  const darknessFactor = Math.min(Math.sqrt(dist * darknessScaling), 1);
+  const darknessScaling = 0.15;
+  /*
+  const darknessFactor = Math.min(
+    Math.sqrt(Math.abs(dist) * darknessScaling),
+    1
+  );
+  */
 
+  const darknessFactor = Math.min(Math.abs(dist) * darknessScaling, 1);
+
+  // console.log(dist);
   ctx.fillStyle = `rgba(0, 0, 0, ${darknessFactor})`;
   ctx.fillRect(x, y, 1, 1);
 }
@@ -395,6 +411,7 @@ function getRounded(x: number, y: number) {
   */
 
 function roundToGrid(x: number, y: number, z: number) {
+  // console.log(x, y, z, mapX, mapY, mapZ);
   const {
     x: floorX,
     y: floorY,

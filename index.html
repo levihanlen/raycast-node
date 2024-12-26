@@ -5,18 +5,28 @@
     <title>Raycaster</title>
     <script src="https://cdn.tailwindcss.com"></script>
   </head>
-  <body class="relative">
-    <div class="absolute top-2 left-2 backdrop-blur p-4 rounded bg-white/50">
-      <h1>Levi Hanlen's Raycaster</h1>
-      <div id="fps"></div>
+  <body class="w-full flex flex-col items-center bg-black">
+    <div class="relative">
+      <div class="absolute top-2 left-2 backdrop-blur p-4 rounded bg-white/50">
+        <h1>Levi Hanlen's Raycaster</h1>
+        <div><span id="fps"></span> FPS</div>
+        <div>WASD - move</div>
+        <div>Q and E - up/down</div>
+        <div>Arrows - look around</div>
+      </div>
+      <canvas
+        id="canvas"
+        width="200"
+        height="100"
+        class="border border-black h-screen w-full bg-white"
+      ></canvas>
     </div>
-    <canvas
-      id="canvas"
-      width="150"
-      height="75"
-      class="aspect-square border border-black w-screen h-screen"
-      style="image-rendering: pixelated; image-rendering: crisp-edges"
-    ></canvas>
   </body>
   <script src="/src/3d.ts"></script>
 </html>
+
+<!--
+
+
+      style="image-rendering: pixelated; image-rendering: crisp-edges"
+-->
